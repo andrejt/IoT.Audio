@@ -1,14 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Net.Http;
 using System.Threading;
 using Windows.ApplicationModel.Background;
-using Windows.Media.SpeechSynthesis;
-
-// The Background Application template is documented at http://go.microsoft.com/fwlink/?LinkID=533884&clcid=0x409
+using Microsoft.Extensions.DependencyInjection;
 
 namespace IoT.Audio
 {
@@ -17,17 +10,26 @@ namespace IoT.Audio
         private BackgroundTaskDeferral deferral;
         private Timer clockTimer;
         private SpeechService speechService;
+        private Webserver webServer;
 
-        public void Run(IBackgroundTaskInstance taskInstance)
+        public async void Run(IBackgroundTaskInstance taskInstance)
         {
             deferral = taskInstance.GetDeferral();
 
-            speechService = new SpeechService();
+            var servicesBuilder = new ServiceCollection()
+                .AddSingleton<SpeechService>()
+                ;
+            Services = servicesBuilder.BuildServiceProvider();
+
+            speechService = Services.GetService<SpeechService>();
 
             var timeToFullHour = GetTimeSpanToNextFullHour();
             clockTimer = new Timer(OnClock, null, timeToFullHour, TimeSpan.FromHours(1));
 
-            speechService.SayTime();
+            webServer = new Webserver();
+
+            await webServer.StartAsync();
+            await speechService.SayTime();
         }
 
         private static TimeSpan GetTimeSpanToNextFullHour()
@@ -41,5 +43,7 @@ namespace IoT.Audio
         {
             await speechService.SayTime();
         }
+
+        internal static IServiceProvider Services { get; private set; }
     }
 }

@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Windows.Globalization;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.SpeechSynthesis;
@@ -31,6 +28,16 @@ namespace IoT.Audio
     
         public async Task SayAsync(string text)
         {
+            using (var stream = await speechSynthesizer.SynthesizeTextToStreamAsync(text))
+            {
+                speechPlayer.Source = MediaSource.CreateFromStream(stream, stream.ContentType);
+            }
+            speechPlayer.Play();
+        }
+
+        public async Task SayAsync(string text, double balance)
+        {
+            speechPlayer.AudioBalance = balance;
             using (var stream = await speechSynthesizer.SynthesizeTextToStreamAsync(text))
             {
                 speechPlayer.Source = MediaSource.CreateFromStream(stream, stream.ContentType);
